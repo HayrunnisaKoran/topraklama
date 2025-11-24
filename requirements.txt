@@ -1,0 +1,30 @@
+# Veri İşleme ve Analiz
+pandas==2.1.4
+numpy==1.26.2
+
+# Makine Öğrenimi
+scikit-learn==1.3.2
+tensorflow==2.15.0  # LSTM Autoencoder için (opsiyonel)
+
+# Veri Görselleştirme
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Veritabanı (Firebase için)
+firebase-admin==6.4.0
+pyrebase4==4.7.1
+
+# API ve HTTP İstekleri
+requests==2.31.0
+flask==3.0.0
+flask-cors==4.0.0
+
+# Zaman Serisi ve Tarih İşlemleri
+python-dateutil==2.8.2
+
+# Model Kaydetme/Yükleme
+joblib==1.3.2
+
+# Logging ve Hata Ayıklama
+python-dotenv==1.0.0
+
