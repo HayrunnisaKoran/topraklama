@@ -24,15 +24,15 @@ def load_and_prepare_data():
     data_file = DATA_GENERATION['output_file']
     
     if not os.path.exists(data_file):
-        print(f"❌ Veri dosyası bulunamadı: {data_file}")
-        print("💡 Önce 'python veri_uret.py' komutunu çalıştırın!")
+        print(f"[X] Veri dosyasi bulunamadi: {data_file}")
+        print("Once 'python veri_uret.py' komutunu calistirin!")
         sys.exit(1)
     
-    print(f"📂 Veri yükleniyor: {data_file}")
+    print(f"Veri yukleniyor: {data_file}")
     df = pd.read_csv(data_file)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     
-    print(f"✅ {len(df):,} kayıt yüklendi")
+    print(f"[OK] {len(df):,} kayit yuklendi")
     
     # Model için özellikleri seç (sensör değerleri)
     feature_columns = [
@@ -62,9 +62,9 @@ def train_isolation_forest(X_train, contamination=0.1):
         model: Eğitilmiş model
         scaler: Veri ölçeklendirici
     """
-    print("\n🔧 Model eğitimi başlıyor...")
+    print("\nModel egitimi basliyor...")
     print(f"   Algoritma: Isolation Forest")
-    print(f"   Beklenen anomali oranı: {contamination*100:.1f}%")
+    print(f"   Beklenen anomali orani: {contamination*100:.1f}%")
     
     # Veriyi ölçeklendir (normalize et)
     scaler = StandardScaler()
@@ -80,9 +80,9 @@ def train_isolation_forest(X_train, contamination=0.1):
     )
     
     # Modeli eğit
-    print("   ⏳ Model eğitiliyor...")
+    print("   Model egitiliyor...")
     model.fit(X_scaled)
-    print("   ✅ Model eğitimi tamamlandı!")
+    print("   [OK] Model egitimi tamamlandi!")
     
     return model, scaler
 
@@ -97,7 +97,7 @@ def evaluate_model(model, scaler, X_test, y_test):
         X_test: Test verisi
         y_test: Gerçek etiketler
     """
-    print("\n📊 Model değerlendirmesi yapılıyor...")
+    print("\nModel degerlendirmesi yapiliyor...")
     
     # Test verisini ölçeklendir
     X_test_scaled = scaler.transform(X_test)
@@ -115,21 +115,21 @@ def evaluate_model(model, scaler, X_test, y_test):
     precision = precision_score(y_test, predictions_binary, zero_division=0)
     recall = recall_score(y_test, predictions_binary, zero_division=0)
     
-    print("\n📈 Performans Metrikleri:")
-    print(f"   • F1 Skoru: {f1:.4f}")
-    print(f"   • Kesinlik (Precision): {precision:.4f}")
-    print(f"   • Duyarlılık (Recall): {recall:.4f}")
+    print("\nPerformans Metrikleri:")
+    print(f"   - F1 Skoru: {f1:.4f}")
+    print(f"   - Kesinlik (Precision): {precision:.4f}")
+    print(f"   - Duyarlilik (Recall): {recall:.4f}")
     
     # Confusion Matrix
     cm = confusion_matrix(y_test, predictions_binary)
-    print("\n🔢 Confusion Matrix:")
-    print(f"   Gerçek Normal / Tahmin Normal: {cm[0,0]}")
-    print(f"   Gerçek Normal / Tahmin Anomali: {cm[0,1]}")
-    print(f"   Gerçek Anomali / Tahmin Normal: {cm[1,0]}")
-    print(f"   Gerçek Anomali / Tahmin Anomali: {cm[1,1]}")
+    print("\nConfusion Matrix:")
+    print(f"   Gercek Normal / Tahmin Normal: {cm[0,0]}")
+    print(f"   Gercek Normal / Tahmin Anomali: {cm[0,1]}")
+    print(f"   Gercek Anomali / Tahmin Normal: {cm[1,0]}")
+    print(f"   Gercek Anomali / Tahmin Anomali: {cm[1,1]}")
     
     # Detaylı rapor
-    print("\n📋 Detaylı Sınıflandırma Raporu:")
+    print("\nDetayli Siniflandirma Raporu:")
     print(classification_report(y_test, predictions_binary, 
                               target_names=['Normal', 'Anomali'],
                               zero_division=0))
@@ -242,7 +242,7 @@ def save_model(model, scaler, model_path=None):
         'scaler': scaler
     }, model_path)
     
-    print(f"\n💾 Model kaydedildi: {model_path}")
+    print(f"\nModel kaydedildi: {model_path}")
 
 
 def load_model(model_path=None):
@@ -271,7 +271,7 @@ def main():
     Ana eğitim fonksiyonu
     """
     print("=" * 60)
-    print("🤖 Yapay Zeka Model Eğitimi")
+    print("Yapay Zeka Model Egitimi")
     print("=" * 60)
     
     # Veriyi yükle
@@ -282,9 +282,9 @@ def main():
     X_train, X_test = X[:split_idx], X[split_idx:]
     y_train, y_test = y[:split_idx], y[split_idx:]
     
-    print(f"\n📊 Veri Bölünmesi:")
-    print(f"   • Eğitim: {len(X_train):,} kayıt")
-    print(f"   • Test: {len(X_test):,} kayıt")
+    print(f"\nVeri Bolunmesi:")
+    print(f"   - Egitim: {len(X_train):,} kayit")
+    print(f"   - Test: {len(X_test):,} kayit")
     
     # Modeli eğit
     contamination = MODEL_CONFIG['contamination']
@@ -297,7 +297,7 @@ def main():
     save_model(model, scaler)
     
     # Örnek tahmin
-    print("\n🧪 Örnek Tahmin Testi:")
+    print("\nOrnek Tahmin Testi:")
     sample_data = {
         'toprak_direnci': 3.5,
         'kacak_akim': 5.0,
@@ -309,13 +309,13 @@ def main():
     is_anomaly, anomaly_score = predict_anomaly(model, scaler, sample_data)
     risk_score = calculate_risk_score(anomaly_score, sample_data)
     
-    print(f"   Örnek Veri: {sample_data}")
-    print(f"   Anomali Tespiti: {'⚠️ EVET' if is_anomaly else '✅ HAYIR'}")
+    print(f"   Ornek Veri: {sample_data}")
+    print(f"   Anomali Tespiti: {'[!] EVET' if is_anomaly else '[OK] HAYIR'}")
     print(f"   Anomali Skoru: {anomaly_score:.4f}")
-    print(f"   Risk Puanı: {risk_score:.2f}/100")
+    print(f"   Risk Puani: {risk_score:.2f}/100")
     
     print("\n" + "=" * 60)
-    print("✅ Model eğitimi başarıyla tamamlandı!")
+    print("[OK] Model egitimi basariyla tamamlandi!")
     print("=" * 60)
 
 
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print(f"\n❌ Hata oluştu: {str(e)}")
+        print(f"\n[X] Hata olustu: {str(e)}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

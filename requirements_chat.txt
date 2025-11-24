@@ -1,0 +1,21 @@
+# Chat Sistemi için Ek Paketler
+
+# LLM ve RAG için
+langchain==0.1.0
+langchain-community==0.0.10
+langchain-openai==0.0.2
+openai==1.12.0
+
+# Vector Store (opsiyonel - RAG için)
+chromadb==0.4.22
+faiss-cpu==1.7.4
+
+# Embedding (opsiyonel)
+sentence-transformers==2.2.2
+
+# Ollama için (yerel LLM - ücretsiz)
+ollama==0.1.7
+
+# Chat için ek paketler
+python-dotenv==1.0.0
+
