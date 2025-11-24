@@ -3,25 +3,40 @@ Proje Konfigürasyon Dosyası
 Topraklama İzleme ve Anomali Tespiti Sistemi
 """
 
-# Trafo Sayısı ve Konfigürasyonu
-NUM_TRANSFORMERS = 50  # Toplam trafo sayısı
+import random
 
-# İzmir Bölgesi Koordinatları (Örnek trafo lokasyonları)
-IZMIR_CENTER = {
-    'latitude': 38.4237,
-    'longitude': 27.1428
+# Trafo Sayısı ve Konfigürasyonu
+NUM_TRANSFORMERS = 120  # Toplam trafo sayısı
+
+# İzmir Bölgesi Sınırları (Rastgele dağılım için)
+IZMIR_BOUNDS = {
+    'lat_min': 38.20,   # Güney sınır
+    'lat_max': 38.70,   # Kuzey sınır
+    'lon_min': 26.80,   # Batı sınır
+    'lon_max': 27.50    # Doğu sınır
 }
 
-# Trafo Lokasyonları (İzmir bölgesinde rastgele dağıtılmış)
-# Her trafo için enlem ve boylam değerleri
-TRANSFORMER_LOCATIONS = [
-    {'id': i+1, 
-     'latitude': IZMIR_CENTER['latitude'] + (i % 10 - 5) * 0.05,
-     'longitude': IZMIR_CENTER['longitude'] + (i // 10 - 2) * 0.05,
-     'name': f'Trafo {i+1}',
-     'region': ['Alsancak', 'Bornova', 'Karşıyaka', 'Konak', 'Buca'][i % 5]}
-    for i in range(NUM_TRANSFORMERS)
+# İzmir Bölgeleri
+IZMIR_REGIONS = [
+    'Alsancak', 'Bornova', 'Karşıyaka', 'Konak', 'Buca',
+    'Çiğli', 'Bayraklı', 'Narlıdere', 'Balçova', 'Karabağlar',
+    'Gaziemir', 'Kemalpaşa', 'Urla', 'Menderes', 'Torbalı',
+    'Selçuk', 'Foça', 'Aliağa', 'Menemen', 'Bergama'
 ]
+
+# Trafo Lokasyonları (İzmir bölgesinde rastgele dağıtılmış)
+TRANSFORMER_LOCATIONS = []
+for i in range(NUM_TRANSFORMERS):
+    lat = random.uniform(IZMIR_BOUNDS['lat_min'], IZMIR_BOUNDS['lat_max'])
+    lon = random.uniform(IZMIR_BOUNDS['lon_min'], IZMIR_BOUNDS['lon_max'])
+    region = random.choice(IZMIR_REGIONS)
+    TRANSFORMER_LOCATIONS.append({
+        'id': i+1,
+        'latitude': round(lat, 6),
+        'longitude': round(lon, 6),
+        'name': f'Trafo {i+1}',
+        'region': region
+    })
 
 # Sensör Parametreleri - Normal Değer Aralıkları
 SENSOR_RANGES = {

@@ -59,8 +59,10 @@ Thumbs.db
 
 # Firebase
 firebase-adminsdk-*.json
+firebase-key.json
 .firebaserc
 firebase.json
+firebase_config.py
 
 # Test/Check scripts
 check_packages.py

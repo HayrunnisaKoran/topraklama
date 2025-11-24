@@ -1,19 +1,24 @@
-"""API'yi test etmek için basit script"""
-import sys
-import traceback
+"""Test API endpoint"""
+import requests
+import json
 
 try:
-    print("App.py import ediliyor...")
-    from app import app, initialize_system
+    r = requests.get('http://localhost:5000/api/realtime-data')
+    print(f"Status: {r.status_code}")
+    data = r.json()
+    print(f"Count: {data.get('count', 0)}")
+    print(f"Message: {data.get('message', 'N/A')}")
+    print(f"Source: {data.get('source', 'N/A')}")
     
-    print("Sistem baslatiliyor...")
-    initialize_system()
-    
-    print("API baslatiliyor...")
-    app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)
-    
+    if data.get('data'):
+        first = data['data'][0]
+        print(f"\nFirst transformer:")
+        print(f"  ID: {first.get('transformer_id')}")
+        print(f"  Name: {first.get('name')}")
+        print(f"  Risk Score: {first.get('risk_score')}")
+        print(f"  Risk Level: {first.get('risk_level')}")
+    else:
+        print("\nNo data in response")
+        
 except Exception as e:
-    print(f"HATA: {e}")
-    traceback.print_exc()
-    sys.exit(1)
-
+    print(f"Error: {e}")

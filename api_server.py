@@ -18,6 +18,19 @@ from config import (
     DATA_GENERATION
 )
 
+# Firebase import (opsiyonel)
+USE_FIREBASE = os.path.exists('firebase-key.json')
+if USE_FIREBASE:
+    try:
+        from firebase_config import init_firebase, get_firestore, get_latest_by_transformer, FIRESTORE_COLLECTION
+        init_firebase('firebase-key.json')
+        print("✅ Firebase API için başlatıldı")
+    except Exception as e:
+        print(f"⚠️  Firebase başlatılamadı: {e}")
+        USE_FIREBASE = False
+else:
+    print("ℹ️  firebase-key.json bulunamadı, CSV kullanılacak")
+
 app = Flask(__name__)
 CORS(app)  # Frontend'den istekler için CORS aktif
 
@@ -77,31 +90,54 @@ def get_transformer_details(transformer_id):
         return jsonify({'error': 'Geçersiz trafo ID'}), 404
     
     loc = TRANSFORMER_LOCATIONS[transformer_id - 1]
-    
-    # Son veriyi CSV'den oku (varsa)
-    realtime_file = 'data/realtime_data.csv'
     latest_data = None
     
-    if os.path.exists(realtime_file):
+    # Firebase'den veri çek (birincil)
+    if USE_FIREBASE:
         try:
-            df = pd.read_csv(realtime_file)
-            transformer_data = df[df['transformer_id'] == transformer_id]
-            if not transformer_data.empty:
-                latest = transformer_data.iloc[-1]
+            latest_dict = get_latest_by_transformer(FIRESTORE_COLLECTION, transformer_id)
+            if transformer_id in latest_dict:
+                data = latest_dict[transformer_id]
                 latest_data = {
-                    'toprak_direnci': float(latest.get('toprak_direnci', 0)),
-                    'kacak_akim': float(latest.get('kacak_akim', 0)),
-                    'toprak_potansiyel': float(latest.get('toprak_potansiyel', 0)),
-                    'toprak_nemi': float(latest.get('toprak_nemi', 0)),
-                    'toprak_sicakligi': float(latest.get('toprak_sicakligi', 0)),
-                    'korozyon_seviyesi': float(latest.get('korozyon_seviyesi', 0)),
-                    'risk_score': float(latest.get('risk_score', 0)),
-                    'risk_level': latest.get('risk_level', 'unknown'),
-                    'is_anomaly': bool(latest.get('is_anomaly', False)),
-                    'timestamp': latest.get('timestamp', datetime.now().isoformat())
+                    'toprak_direnci': float(data.get('toprak_direnci', 0)),
+                    'kacak_akim': float(data.get('kacak_akim', 0)),
+                    'toprak_potansiyel': float(data.get('toprak_potansiyel', 0)),
+                    'toprak_nemi': float(data.get('toprak_nemi', 0)),
+                    'toprak_sicakligi': float(data.get('toprak_sicakligi', 0)),
+                    'korozyon_seviyesi': float(data.get('korozyon_seviyesi', 0)),
+                    'risk_score': float(data.get('risk_score', 0)),
+                    'risk_level': data.get('risk_level', 'unknown'),
+                    'risk_color': data.get('risk_color', 'gray'),
+                    'is_anomaly': bool(data.get('is_anomaly', False)),
+                    'timestamp': data.get('timestamp', datetime.now().isoformat())
                 }
         except Exception as e:
-            print(f"Veri okuma hatası: {e}")
+            print(f"⚠️ Firebase transformer detay okuma hatası: {e}")
+    
+    # CSV'den veri çek (fallback)
+    if latest_data is None:
+        realtime_file = 'data/realtime_data.csv'
+        if os.path.exists(realtime_file):
+            try:
+                df = pd.read_csv(realtime_file)
+                transformer_data = df[df['transformer_id'] == transformer_id]
+                if not transformer_data.empty:
+                    latest = transformer_data.iloc[-1]
+                    latest_data = {
+                        'toprak_direnci': float(latest.get('toprak_direnci', 0)),
+                        'kacak_akim': float(latest.get('kacak_akim', 0)),
+                        'toprak_potansiyel': float(latest.get('toprak_potansiyel', 0)),
+                        'toprak_nemi': float(latest.get('toprak_nemi', 0)),
+                        'toprak_sicakligi': float(latest.get('toprak_sicakligi', 0)),
+                        'korozyon_seviyesi': float(latest.get('korozyon_seviyesi', 0)),
+                        'risk_score': float(latest.get('risk_score', 0)),
+                        'risk_level': latest.get('risk_level', 'unknown'),
+                        'risk_color': latest.get('risk_color', 'gray'),
+                        'is_anomaly': bool(latest.get('is_anomaly', False)),
+                        'timestamp': latest.get('timestamp', datetime.now().isoformat())
+                    }
+            except Exception as e:
+                print(f"⚠️ CSV transformer detay okuma hatası: {e}")
     
     return jsonify({
         'id': loc['id'],
@@ -115,55 +151,124 @@ def get_transformer_details(transformer_id):
 
 @app.route('/api/realtime-data', methods=['GET'])
 def get_realtime_data():
-    """Gerçek zamanlı veriyi döner (son N kayıt)"""
+    """Gerçek zamanlı veriyi döner (Firebase veya CSV)"""
     realtime_file = 'data/realtime_data.csv'
     
-    if not os.path.exists(realtime_file):
-        return jsonify({
-            'data': [],
-            'message': 'Henüz veri yok. Simülasyonu çalıştırın.'
-        })
+    # Tüm trafolar için sonuç listesi oluştur
+    result = []
     
-    try:
-        df = pd.read_csv(realtime_file)
-        
-        # Son 100 kaydı al
-        limit = int(request.args.get('limit', 100))
-        df = df.tail(limit)
-        
-        # Her trafo için son veriyi al
-        result = []
-        for transformer_id in range(1, NUM_TRANSFORMERS + 1):
-            trafo_data = df[df['transformer_id'] == transformer_id]
-            if not trafo_data.empty:
-                latest = trafo_data.iloc[-1]
-                result.append({
-                    'transformer_id': int(latest['transformer_id']),
-                    'name': TRANSFORMER_LOCATIONS[transformer_id - 1]['name'],
-                    'latitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['latitude'],
-                    'longitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['longitude'],
-                    'region': TRANSFORMER_LOCATIONS[transformer_id - 1]['region'],
-                    'toprak_direnci': float(latest.get('toprak_direnci', 0)),
-                    'kacak_akim': float(latest.get('kacak_akim', 0)),
-                    'toprak_potansiyel': float(latest.get('toprak_potansiyel', 0)),
-                    'toprak_nemi': float(latest.get('toprak_nemi', 0)),
-                    'toprak_sicakligi': float(latest.get('toprak_sicakligi', 0)),
-                    'korozyon_seviyesi': float(latest.get('korozyon_seviyesi', 0)),
-                    'risk_score': float(latest.get('risk_score', 0)),
-                    'risk_level': latest.get('risk_level', 'unknown'),
-                    'risk_color': latest.get('risk_color', 'gray'),
-                    'is_anomaly': bool(latest.get('is_anomaly', False)),
-                    'timestamp': latest.get('timestamp', datetime.now().isoformat())
-                })
-        
-        return jsonify({
-            'data': result,
-            'count': len(result),
+    # Önce tüm trafo lokasyonlarını varsayılan değerlerle ekle
+    for transformer_id in range(1, NUM_TRANSFORMERS + 1):
+        result.append({
+            'transformer_id': transformer_id,
+            'name': TRANSFORMER_LOCATIONS[transformer_id - 1]['name'],
+            'latitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['latitude'],
+            'longitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['longitude'],
+            'region': TRANSFORMER_LOCATIONS[transformer_id - 1]['region'],
+            'toprak_direnci': 0,
+            'kacak_akim': 0,
+            'toprak_potansiyel': 0,
+            'toprak_nemi': 0,
+            'toprak_sicakligi': 0,
+            'korozyon_seviyesi': 0,
+            'risk_score': 0,
+            'risk_level': 'unknown',
+            'risk_color': 'gray',
+            'is_anomaly': False,
             'timestamp': datetime.now().isoformat()
         })
     
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # Firebase'den veri çek (birincil)
+    if USE_FIREBASE:
+        try:
+            latest_data = get_latest_by_transformer(FIRESTORE_COLLECTION)
+            
+            # Firebase'den gelen verileri result listesine güncelle
+            for transformer_id in range(1, NUM_TRANSFORMERS + 1):
+                if transformer_id in latest_data:
+                    data = latest_data[transformer_id]
+                    # Result listesinde bu trafo ID'sine sahip kaydı bul ve güncelle
+                    for i, item in enumerate(result):
+                        if item['transformer_id'] == transformer_id:
+                            result[i] = {
+                                'transformer_id': int(data.get('transformer_id', transformer_id)),
+                                'name': TRANSFORMER_LOCATIONS[transformer_id - 1]['name'],
+                                'latitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['latitude'],
+                                'longitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['longitude'],
+                                'region': TRANSFORMER_LOCATIONS[transformer_id - 1]['region'],
+                                'toprak_direnci': float(data.get('toprak_direnci', 0)),
+                                'kacak_akim': float(data.get('kacak_akim', 0)),
+                                'toprak_potansiyel': float(data.get('toprak_potansiyel', 0)),
+                                'toprak_nemi': float(data.get('toprak_nemi', 0)),
+                                'toprak_sicakligi': float(data.get('toprak_sicakligi', 0)),
+                                'korozyon_seviyesi': float(data.get('korozyon_seviyesi', 0)),
+                                'risk_score': float(data.get('risk_score', 0)),
+                                'risk_level': data.get('risk_level', 'unknown'),
+                                'risk_color': data.get('risk_color', 'gray'),
+                                'is_anomaly': bool(data.get('is_anomaly', False)),
+                                'timestamp': data.get('timestamp', datetime.now().isoformat())
+                            }
+                            break
+            
+            return jsonify({
+                'data': result,
+                'count': len(result),
+                'timestamp': datetime.now().isoformat(),
+                'message': 'Veriler Firebase\'den yüklendi',
+                'source': 'firebase'
+            })
+        except Exception as e:
+            print(f"⚠️ Firebase okuma hatası: {e}")
+            # Hata durumunda CSV'ye düş
+    
+    # CSV'den veri çek (fallback)
+    if os.path.exists(realtime_file):
+        try:
+            df = pd.read_csv(realtime_file)
+            
+            # Son 100 kaydı al
+            limit = int(request.args.get('limit', 100))
+            df = df.tail(limit)
+            
+            # Her trafo için son veriyi al ve result listesini güncelle
+            for transformer_id in range(1, NUM_TRANSFORMERS + 1):
+                trafo_data = df[df['transformer_id'] == transformer_id]
+                if not trafo_data.empty:
+                    latest = trafo_data.iloc[-1]
+                    # Result listesinde bu trafo ID'sine sahip kaydı bul ve güncelle
+                    for i, item in enumerate(result):
+                        if item['transformer_id'] == transformer_id:
+                            result[i] = {
+                                'transformer_id': int(latest.get('transformer_id', transformer_id)),
+                                'name': TRANSFORMER_LOCATIONS[transformer_id - 1]['name'],
+                                'latitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['latitude'],
+                                'longitude': TRANSFORMER_LOCATIONS[transformer_id - 1]['longitude'],
+                                'region': TRANSFORMER_LOCATIONS[transformer_id - 1]['region'],
+                                'toprak_direnci': float(latest.get('toprak_direnci', 0)),
+                                'kacak_akim': float(latest.get('kacak_akim', 0)),
+                                'toprak_potansiyel': float(latest.get('toprak_potansiyel', 0)),
+                                'toprak_nemi': float(latest.get('toprak_nemi', 0)),
+                                'toprak_sicakligi': float(latest.get('toprak_sicakligi', 0)),
+                                'korozyon_seviyesi': float(latest.get('korozyon_seviyesi', 0)),
+                                'risk_score': float(latest.get('risk_score', 0)),
+                                'risk_level': latest.get('risk_level', 'unknown'),
+                                'risk_color': latest.get('risk_color', 'gray'),
+                                'is_anomaly': bool(latest.get('is_anomaly', False)),
+                                'timestamp': latest.get('timestamp', datetime.now().isoformat())
+                            }
+                            break
+        
+        except Exception as e:
+            print(f"⚠️ CSV okuma hatası: {e}")
+            # Hata durumunda varsayılan değerlerle devam et
+    
+    return jsonify({
+        'data': result,
+        'count': len(result),
+        'timestamp': datetime.now().isoformat(),
+        'message': 'Veriler yüklendi' if os.path.exists(realtime_file) else 'Simülasyonu başlatın',
+        'source': 'csv' if os.path.exists(realtime_file) else 'default'
+    })
 
 
 @app.route('/api/historical-data/<int:transformer_id>', methods=['GET'])

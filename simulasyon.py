@@ -224,12 +224,38 @@ class AnomalyDetectionSystem:
 
 class DataStorage:
     """
-    Veri depolama - CSV veya JSON formatında kayıt
+    Veri depolama - Firebase Firestore (birincil) ve CSV (yedek)
     """
     
-    def __init__(self, storage_type='csv'):
+    def __init__(self, storage_type='firebase'):
         self.storage_type = storage_type
         self.data_file = 'data/realtime_data.csv'
+        self.use_firebase = False
+        self.firestore_db = None
+        
+        # Firebase başlat (eğer kullanılacaksa)
+        if self.storage_type == 'firebase':
+            try:
+                from firebase_config import init_firebase, get_firestore, FIRESTORE_COLLECTION
+                # firebase-key.json dosyası var mı kontrol et
+                if os.path.exists('firebase-key.json'):
+                    init_firebase('firebase-key.json')
+                    self.firestore_db = get_firestore()
+                    if self.firestore_db:
+                        self.use_firebase = True
+                        print("✅ Firebase depolama aktif")
+                    else:
+                        print("⚠️  Firebase başlatılamadı, CSV kullanılacak")
+                        self.storage_type = 'csv'
+                else:
+                    print("ℹ️  firebase-key.json bulunamadı, CSV kullanılacak")
+                    self.storage_type = 'csv'
+            except Exception as e:
+                print(f"⚠️  Firebase başlatma hatası: {e}")
+                print("💡 CSV kullanılacak")
+                self.storage_type = 'csv'
+        
+        # CSV için klasör oluştur
         self.ensure_directory()
     
     def ensure_directory(self):
@@ -238,7 +264,7 @@ class DataStorage:
     
     def save_data(self, sensor_data, analysis_result):
         """
-        Veriyi kaydeder.
+        Veriyi kaydeder (Firebase ve/veya CSV).
         
         Args:
             sensor_data: Sensör verisi
@@ -247,34 +273,31 @@ class DataStorage:
         # Veriyi birleştir
         record = {**sensor_data, **analysis_result}
         
-        if self.storage_type == 'csv':
-            # CSV'ye ekle
+        # Timestamp'i string'e çevir (Firebase için)
+        if 'timestamp' in record and isinstance(record['timestamp'], str):
+            record['timestamp'] = record['timestamp']
+        else:
+            record['timestamp'] = datetime.now().isoformat()
+        
+        # Firebase'e kaydet (birincil)
+        if self.use_firebase and self.firestore_db:
+            try:
+                from firebase_config import save_to_firestore, FIRESTORE_COLLECTION
+                # Firestore için timestamp'i datetime'a çevir (opsiyonel)
+                firestore_record = record.copy()
+                save_to_firestore(firestore_record, FIRESTORE_COLLECTION)
+            except Exception as e:
+                print(f"⚠️  Firebase kayıt hatası: {e}")
+        
+        # CSV'ye de kaydet (yedek)
+        try:
             df = pd.DataFrame([record])
-            
-            # Dosya varsa ekle, yoksa oluştur
             if os.path.exists(self.data_file):
                 df.to_csv(self.data_file, mode='a', header=False, index=False)
             else:
                 df.to_csv(self.data_file, mode='w', header=True, index=False)
-        
-        elif self.storage_type == 'json':
-            # JSON dosyasına ekle
-            json_file = self.data_file.replace('.csv', '.json')
-            
-            if os.path.exists(json_file):
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            else:
-                data = []
-            
-            data.append(record)
-            
-            # Son 1000 kaydı tut
-            if len(data) > 1000:
-                data = data[-1000:]
-            
-            with open(json_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"⚠️  CSV kayıt hatası: {e}")
 
 
 def run_simulation(duration_minutes=10, demo_mode=True):
@@ -296,7 +319,8 @@ def run_simulation(duration_minutes=10, demo_mode=True):
     ]
     
     detection_system = AnomalyDetectionSystem()
-    storage = DataStorage()
+    # Firebase kullan (firebase-key.json varsa), yoksa CSV
+    storage = DataStorage(storage_type='firebase')
     
     # Test için bazı trafolara arıza modu ekle
     if demo_mode:
@@ -313,6 +337,7 @@ def run_simulation(duration_minutes=10, demo_mode=True):
     
     start_time = time.time()
     iteration = 0
+    isolated_count = 0  # Başlangıç değeri
     
     try:
         while True:

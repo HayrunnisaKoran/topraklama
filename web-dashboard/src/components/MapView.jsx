@@ -19,7 +19,13 @@ function MapView({ data, selectedTransformer, onTransformerSelect }) {
   // İzmir merkez koordinatları
   const center = [38.4237, 27.1428]
 
-  const getMarkerColor = (riskScore, riskLevel) => {
+  const getMarkerColor = (riskScore, riskLevel, isAnomaly) => {
+    // Veri yoksa gri göster
+    if (riskLevel === 'unknown' || riskScore === 0 || riskScore === undefined) {
+      return '#95a5a6' // Gri - Veri yok
+    }
+    // Arızalı trafolar için koyu kırmızı
+    if (isAnomaly && riskScore >= 80) return '#6B0000' // Çok koyu kırmızı - Arızalı
     if (riskScore >= 70) return '#ff4757' // Kırmızı - Yüksek risk
     if (riskScore >= 40) return '#ffa502' // Turuncu - Orta risk
     return '#2ed573' // Yeşil - Düşük risk
@@ -46,32 +52,64 @@ function MapView({ data, selectedTransformer, onTransformerSelect }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {data.map((transformer) => {
-          const color = getMarkerColor(transformer.risk_score, transformer.risk_level)
-          const icon = createCustomIcon(color)
-          
-          return (
-            <Marker
-              key={transformer.transformer_id}
-              position={[transformer.latitude, transformer.longitude]}
-              icon={icon}
-              eventHandlers={{
-                click: () => {
-                  onTransformerSelect(transformer.transformer_id)
-                }
-              }}
-            >
-              <Popup>
-                <div className="popup-content">
-                  <h3>{transformer.name}</h3>
-                  <p>Bölge: {transformer.region}</p>
-                  <p>Risk Skoru: <strong>{transformer.risk_score.toFixed(1)}</strong></p>
-                  <p>Durum: <span style={{ color }}>{transformer.risk_level.toUpperCase()}</span></p>
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
+        {data && data.length > 0 ? (
+          data.map((transformer) => {
+            const riskScore = transformer.risk_score || 0
+            const riskLevel = transformer.risk_level || 'unknown'
+            const isAnomaly = transformer.is_anomaly || false
+            const color = getMarkerColor(riskScore, riskLevel, isAnomaly)
+            const icon = createCustomIcon(color)
+            
+            return (
+              <Marker
+                key={transformer.transformer_id}
+                position={[transformer.latitude, transformer.longitude]}
+                icon={icon}
+                eventHandlers={{
+                  click: () => {
+                    onTransformerSelect(transformer.transformer_id)
+                  }
+                }}
+              >
+                <Popup>
+                  <div className="popup-content">
+                    <h3>{transformer.name}</h3>
+                    <p>Bölge: {transformer.region}</p>
+                    {riskScore > 0 ? (
+                      <>
+                        <p>Risk Skoru: <strong>{riskScore.toFixed(1)}</strong></p>
+                        <p>Durum: <span style={{ color }}>
+                          {isAnomaly && riskScore >= 80 
+                            ? 'ARIZALI' 
+                            : riskLevel.toUpperCase()}
+                        </span></p>
+                      </>
+                    ) : (
+                      <p style={{ color: '#95a5a6' }}>Veri bekleniyor...</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          })
+        ) : (
+          <div style={{ 
+            position: 'absolute', 
+            top: '50%', 
+            left: '50%', 
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            zIndex: 1000
+          }}>
+            <p>Trafo verileri yükleniyor...</p>
+            <p style={{ fontSize: '12px', marginTop: '10px' }}>
+              Simülasyonu başlatın: python simulasyon.py
+            </p>
+          </div>
+        )}
       </MapContainer>
     </div>
   )
