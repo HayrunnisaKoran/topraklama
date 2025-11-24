@@ -19,6 +19,9 @@ requests==2.31.0
 flask==3.0.0
 flask-cors==4.0.0
 
+# Backend API için ek paketler
+werkzeug==3.0.1
+
 # Zaman Serisi ve Tarih İşlemleri
 python-dateutil==2.8.2
 
