@@ -46,7 +46,7 @@ def initialize_system():
     # Veri depolama
     storage = DataStorage()
     
-    print("✅ Sistem başlatıldı")
+    print("[OK] Sistem baslatildi")
 
 # API Endpoints
 
@@ -77,20 +77,20 @@ def get_transformers():
                 'id': transformer.transformer_id,
                 'name': transformer.location['name'],
                 'region': transformer.location['region'],
-                'latitude': transformer.location['latitude'],
-                'longitude': transformer.location['longitude'],
+                'latitude': float(transformer.location['latitude']),
+                'longitude': float(transformer.location['longitude']),
                 'risk_score': round(analysis['risk_score'], 2),
                 'risk_level': analysis['risk_level'],
-                'is_anomaly': analysis['is_anomaly'],
-                'isolation_status': transformer.isolation_status,
-                'last_update': transformer.last_update.isoformat(),
+                'is_anomaly': bool(analysis['is_anomaly']),
+                'isolation_status': bool(transformer.isolation_status),
+                'last_update': str(transformer.last_update.isoformat()),
                 'sensor_data': {
-                    'toprak_direnci': sensor_data['toprak_direnci'],
-                    'kacak_akim': sensor_data['kacak_akim'],
-                    'toprak_potansiyel': sensor_data['toprak_potansiyel'],
-                    'toprak_nemi': sensor_data['toprak_nemi'],
-                    'toprak_sicakligi': sensor_data['toprak_sicakligi'],
-                    'korozyon_seviyesi': sensor_data['korozyon_seviyesi']
+                    'toprak_direnci': float(sensor_data['toprak_direnci']),
+                    'kacak_akim': float(sensor_data['kacak_akim']),
+                    'toprak_potansiyel': float(sensor_data['toprak_potansiyel']),
+                    'toprak_nemi': float(sensor_data['toprak_nemi']),
+                    'toprak_sicakligi': float(sensor_data['toprak_sicakligi']),
+                    'korozyon_seviyesi': float(sensor_data['korozyon_seviyesi'])
                 }
             })
         
@@ -127,21 +127,21 @@ def get_transformer(transformer_id):
                 'id': transformer.transformer_id,
                 'name': transformer.location['name'],
                 'region': transformer.location['region'],
-                'latitude': transformer.location['latitude'],
-                'longitude': transformer.location['longitude'],
+                'latitude': float(transformer.location['latitude']),
+                'longitude': float(transformer.location['longitude']),
                 'risk_score': round(analysis['risk_score'], 2),
                 'risk_level': analysis['risk_level'],
-                'is_anomaly': analysis['is_anomaly'],
-                'anomaly_score': analysis['anomaly_score'],
-                'isolation_status': transformer.isolation_status,
-                'last_update': transformer.last_update.isoformat(),
+                'is_anomaly': bool(analysis['is_anomaly']),
+                'anomaly_score': float(analysis['anomaly_score']),
+                'isolation_status': bool(transformer.isolation_status),
+                'last_update': str(transformer.last_update.isoformat()),
                 'sensor_data': {
-                    'toprak_direnci': sensor_data['toprak_direnci'],
-                    'kacak_akim': sensor_data['kacak_akim'],
-                    'toprak_potansiyel': sensor_data['toprak_potansiyel'],
-                    'toprak_nemi': sensor_data['toprak_nemi'],
-                    'toprak_sicakligi': sensor_data['toprak_sicakligi'],
-                    'korozyon_seviyesi': sensor_data['korozyon_seviyesi']
+                    'toprak_direnci': float(sensor_data['toprak_direnci']),
+                    'kacak_akim': float(sensor_data['kacak_akim']),
+                    'toprak_potansiyel': float(sensor_data['toprak_potansiyel']),
+                    'toprak_nemi': float(sensor_data['toprak_nemi']),
+                    'toprak_sicakligi': float(sensor_data['toprak_sicakligi']),
+                    'korozyon_seviyesi': float(sensor_data['korozyon_seviyesi'])
                 }
             }
         })
@@ -334,22 +334,22 @@ def internal_error(error):
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("🚀 Flask API Server Başlatılıyor...")
+    print("Flask API Server Baslatiliyor...")
     print("=" * 60)
     
     # Sistemi başlat
     initialize_system()
     
-    print("\n📡 API Endpoints:")
-    print("   GET  /api/health - Sistem sağlık kontrolü")
-    print("   GET  /api/transformers - Tüm trafolar")
-    print("   GET  /api/transformers/<id> - Trafo detayı")
-    print("   GET  /api/transformers/<id>/history - Trafo geçmişi")
+    print("\nAPI Endpoints:")
+    print("   GET  /api/health - Sistem saglik kontrolu")
+    print("   GET  /api/transformers - Tum trafolar")
+    print("   GET  /api/transformers/<id> - Trafo detayi")
+    print("   GET  /api/transformers/<id>/history - Trafo gecmisi")
     print("   GET  /api/dashboard/stats - Dashboard istatistikleri")
     print("   POST /api/transformers/<id>/isolate - Trafo izolasyonu")
     print("   GET  /api/alerts - Bildirimler")
-    print("   GET  /api/config - Sistem konfigürasyonu")
-    print("\n🌐 Server: http://localhost:5000")
+    print("   GET  /api/config - Sistem konfigurasyonu")
+    print("\nServer: http://localhost:5000")
     print("=" * 60)
     
     # Development modunda çalıştır

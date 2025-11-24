@@ -147,8 +147,8 @@ def generate_all_data():
     """
     Tüm trafolar için 1 yıllık veri üretir ve arıza senaryolarını uygular.
     """
-    print("🚀 Veri üretimi başlıyor...")
-    print(f"📊 {NUM_TRANSFORMERS} trafo için 1 yıllık veri üretilecek")
+    print("Veri uretimi basliyor...")
+    print(f"{NUM_TRANSFORMERS} trafo icin 1 yillik veri uretilecek")
     
     start_date = DATA_GENERATION['start_date']
     end_date = DATA_GENERATION['end_date']
@@ -157,34 +157,34 @@ def generate_all_data():
     
     # Her trafo için veri üret
     for transformer_id in range(1, NUM_TRANSFORMERS + 1):
-        print(f"  ⚡ Trafo {transformer_id}/{NUM_TRANSFORMERS} işleniyor...", end='\r')
+        print(f"  Trafo {transformer_id}/{NUM_TRANSFORMERS} isleniyor...", end='\r')
         
         df = generate_normal_data(transformer_id, start_date, end_date)
         all_data.append(df)
     
-    print(f"\n✅ Normal veri üretimi tamamlandı!")
+    print(f"\n[OK] Normal veri uretimi tamamlandi!")
     
     # Tüm verileri birleştir
     combined_df = pd.concat(all_data, ignore_index=True)
-    print(f"📈 Toplam {len(combined_df):,} kayıt oluşturuldu")
+    print(f"Toplam {len(combined_df):,} kayit olusturuldu")
     
     # Arıza senaryolarını uygula
-    print("\n🔧 Arıza senaryoları uygulanıyor...")
+    print("\nAriza senaryolari uygulaniyor...")
     
     # Senaryo 1: Yağmur (Trafo 5, 15, 25'te)
     for trafo_id in [5, 15, 25]:
         apply_failure_scenario(combined_df, trafo_id, 'yagmur', FAILURE_SCENARIOS['yagmur'])
-        print(f"  🌧️  Trafo {trafo_id}: Yağmur senaryosu uygulandı")
+        print(f"  Trafo {trafo_id}: Yagmur senaryosu uygulandi")
     
     # Senaryo 2: Korozyon (Trafo 10, 20, 30'da)
     for trafo_id in [10, 20, 30]:
         apply_failure_scenario(combined_df, trafo_id, 'korozon', FAILURE_SCENARIOS['korozon'])
-        print(f"  ⚠️  Trafo {trafo_id}: Korozyon senaryosu uygulandı")
+        print(f"  Trafo {trafo_id}: Korozon senaryosu uygulandi")
     
     # Senaryo 3: Kaçak Akım (Trafo 7, 17, 27'de)
     for trafo_id in [7, 17, 27]:
         apply_failure_scenario(combined_df, trafo_id, 'kaçak_akim', FAILURE_SCENARIOS['kaçak_akim'])
-        print(f"  ⚡ Trafo {trafo_id}: Kaçak akım senaryosu uygulandı")
+        print(f"  Trafo {trafo_id}: Kacak akim senaryosu uygulandi")
     
     # Veriyi sırala (tarih ve trafo ID'ye göre)
     combined_df = combined_df.sort_values(['timestamp', 'transformer_id']).reset_index(drop=True)
@@ -195,17 +195,17 @@ def generate_all_data():
         os.makedirs(output_dir)
     
     combined_df.to_csv(DATA_GENERATION['output_file'], index=False, encoding='utf-8-sig')
-    print(f"\n💾 Veri kaydedildi: {DATA_GENERATION['output_file']}")
+    print(f"\nVeri kaydedildi: {DATA_GENERATION['output_file']}")
     
     # İstatistikler
-    print("\n📊 Veri İstatistikleri:")
-    print(f"  • Toplam kayıt: {len(combined_df):,}")
-    print(f"  • Anomali kayıt: {combined_df['anomali'].sum():,} ({combined_df['anomali'].mean()*100:.2f}%)")
-    print(f"  • Tarih aralığı: {combined_df['timestamp'].min()} - {combined_df['timestamp'].max()}")
-    print(f"  • Trafo sayısı: {combined_df['transformer_id'].nunique()}")
+    print("\nVeri Istatistikleri:")
+    print(f"  - Toplam kayit: {len(combined_df):,}")
+    print(f"  - Anomali kayit: {combined_df['anomali'].sum():,} ({combined_df['anomali'].mean()*100:.2f}%)")
+    print(f"  - Tarih araligi: {combined_df['timestamp'].min()} - {combined_df['timestamp'].max()}")
+    print(f"  - Trafo sayisi: {combined_df['transformer_id'].nunique()}")
     
     # Örnek veri göster
-    print("\n📋 Örnek Veri (İlk 5 kayıt):")
+    print("\nOrnek Veri (Ilk 5 kayit):")
     print(combined_df.head().to_string())
     
     return combined_df
@@ -214,9 +214,9 @@ def generate_all_data():
 if __name__ == "__main__":
     try:
         df = generate_all_data()
-        print("\n✅ Veri üretimi başarıyla tamamlandı!")
+        print("\n[OK] Veri uretimi basariyla tamamlandi!")
     except Exception as e:
-        print(f"\n❌ Hata oluştu: {str(e)}")
+        print(f"\n[X] Hata olustu: {str(e)}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
