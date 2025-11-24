@@ -62,3 +62,11 @@ firebase-adminsdk-*.json
 .firebaserc
 firebase.json
 
+# Test/Check scripts
+check_packages.py
+check_simple.py
+
+# Planning documents (not pushed to repo)
+PLAN.md
+API_DOKUMANTASYON.md
+
